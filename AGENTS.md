@@ -81,7 +81,7 @@ uv run python scripts/docs.py   # re-mirror docs/ after a dependency bump
 graphify update . && graphify label . --backend=gemini
 ```
 
-Ruff also formats code blocks inside Markdown, so `[tool.ruff] extend-exclude` keeps it out of the generated or vendored `docs/`, `skills/`, and `graphify-out/`; never drop that exclusion. Python 3.12+ and stdlib, plus `textual` and `rich`. Linux only for now (`secret-tool`, `fcntl`, `pgrep`). The version lives only in `pyproject.toml`; `__init__.py` reads it through `importlib.metadata`. The PyPI distribution is `agyswap-cli` (PyPI rejected `agyswap` as too similar to an existing `agy-swap`); the command and the import package stay `agyswap`.
+Ruff also formats code blocks inside Markdown, so `[tool.ruff] extend-exclude` keeps it out of the generated or vendored `docs/`, `skills/`, and `graphify-out/`; never drop that exclusion. Python 3.12+ and stdlib, plus `textual` and `rich`. Linux and macOS are supported (`secret-tool`/`security`, `fcntl`, `pgrep`). The version lives only in `pyproject.toml`; `__init__.py` reads it through `importlib.metadata`. The PyPI distribution is `agyswap-cli` (PyPI rejected `agyswap` as too similar to an existing `agy-swap`); the command and the import package stay `agyswap`.
 
 Textual pitfalls seen in this repo (Textual 8.2.8):
 

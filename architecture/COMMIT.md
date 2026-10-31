@@ -1,25 +1,37 @@
 # Commit
 
-Ditulis lewat `/agyswap-commit` pada 2026-10-26, setelah `/agyswap-prepare` merapikan repo dan memperbarui graphify. Tanpa trailer co-author atau atribusi. Belum di-push.
+## Commit yang dibuat
 
-## Commit
-
-| Hash | Pesan | File |
-| --- | --- | --- |
-| `6879508` | `docs(agents): record windows fcntl crash in todo` | `TODO.md` |
-| `debcc84` | `docs(architecture): add static observation for windows and agy 1.3.3` | `architecture/OBSERVE.md` |
-| `958c1b6` | `chore(graph): generated code graph` | `graphify-out/GRAPH_REPORT.md`, `graphify-out/graph.html`, `graphify-out/graph.json` |
-| (commit ini) | `docs(architecture): add prepare and commit records` | `architecture/PREPARE.md`, `architecture/COMMIT.md` |
+1. `f6c1f17 feat(cli): add macos keychain backend`
+   - `src/agyswap/cli.py`
+2. `873460e test(test): add macos keychain coverage`
+   - `tests/test_swap.py`
+3. `e66d734 chore(package): add macos classifier`
+   - `pyproject.toml`
+4. `290a390 docs(project): document macos support`
+   - `README.md`
+   - `CONTRIBUTING.md`
+5. `5a2ed8d docs(architecture): record macos keychain contract`
+   - `architecture/OBSERVE.md`
+   - `architecture/SPEC.md`
+6. Commit terakhir mencatat aturan agent dan open work platform:
+   - `AGENTS.md`
+   - `TODO.md`
+   - `architecture/COMMIT.md`
 
 ## Alasan pengelompokan
 
-- `docs(agents)` mencatat laporan bug crash `fcntl` di Windows pada versi 0.3.1 ke dalam `TODO.md`.
-- `docs(architecture)` merekam hasil analisis statis binary Windows agy 1.3.3 dan observasi Linux agy 1.3.3 ke dalam `architecture/OBSERVE.md`.
-- `chore(graph)` memperbarui artefak visualisasi dan struktur code graph (`graphify-out/`).
-- `docs(architecture)` mencatat laporan tahap prepare dan rekaman commit ini ke `architecture/PREPARE.md` dan `architecture/COMMIT.md`.
+Perubahan dipisah berdasarkan area: implementasi CLI, test, metadata paket, dokumentasi user, dokumentasi arsitektur, lalu instruksi agent dan catatan open work. Commit kode tidak mencampur perubahan dokumentasi atau metadata.
 
-Commit upstream sync sebelumnya di sesi ini (`3030330`, `ae914b4`, `d9af519`) tercatat di riwayat git.
+## Validasi
+
+- `uv run ruff format .`
+- `uv run ruff check .`
+- `uv run pytest -q` → 107 passed
+- `uv build`
+- Pembacaan Keychain macOS lokal berhasil tanpa mencetak token: prefix `go-keyring-base64`, panjang hasil terjaga.
 
 ## Tidak di-commit
 
-Tidak ada. Working tree bersih setelah commit ini.
+- `dist/` dan artefak build lain tetap di-ignore oleh repository.
+- Verifikasi add/switch dengan dua akun Google nyata belum dilakukan karena akan mengubah Keychain dan login aktif user.
