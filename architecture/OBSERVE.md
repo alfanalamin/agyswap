@@ -9,8 +9,10 @@
 Pada macOS arm64, `agy --version` menghasilkan `1.4.12`. String binary menunjukkan vendored `github.com/zalando/go-keyring` Darwin backend (`third_party/golang/github_com/zalando/go_keyring/v/v0/keyring_darwin.go`) dan prefix `go-keyring-base64:`. Implikasinya:
 
 - Item tetap memakai service `gemini` dan username `antigravity`, tetapi nilai yang dibaca dari Keychain perlu di-decode dari `go-keyring-base64:<base64>` sebelum dipakai sebagai token JSON.
+- Token agy 1.4.12 yang dibaca dari Keychain berbentuk `auth_method`, `id_token_email`, dan `token`; tidak lagi selalu menyertakan `id_token`. Email harus diambil dari `id_token_email` ketika field itu ada.
 - Saat menulis, nilai perlu di-encode dengan prefix yang sama. Agyswap mengirim perintah `add-generic-password` melalui `/usr/bin/security -i` supaya token tidak diletakkan di argv proses.
 - Nilai legacy `go-keyring-encoded:<hex>` juga dibaca agar akun yang dibuat oleh backend Darwin versi lama tetap dapat dipakai.
+- Karena token baru tidak membawa claim `azp`, client ID OAuth juga dipindai dari binary `agy` saat refresh, lalu dicoba bersama client secret yang ditemukan.
 - `fcntl.flock`, `pgrep`, `os.getuid`, dan mode POSIX tetap tersedia di macOS, jadi perubahan platform hanya diperlukan pada backend keyring.
 
 ## Windows (agy 1.3.3, analisis statis)

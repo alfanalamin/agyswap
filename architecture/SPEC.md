@@ -78,7 +78,7 @@ skills/, scripts/, docs/, graphify-out/   tooling agent (lihat AGENTS.md)
 ### Kuota
 
 - Sumber: `POST daily-cloudcode-pa.googleapis.com/v1internal:retrieveUserQuotaSummary`, satu `Pool` per bucket: grup (`Gemini`, `Claude/GPT`) × window (`5h`, `weekly`). Kartu menampilkan nama grup sekali, lalu baris `5h` dan `weekly`; bucket yang masih penuh tanpa hitung mundur reset.
-- Refresh token lewat `oauth2.googleapis.com/token`, dengan client ID dari claim `azp` dan client secret yang dibaca dari binary `agy` saat runtime.
+- Refresh token lewat `oauth2.googleapis.com/token`, dengan client ID dari claim `azp` bila tersedia, atau hasil pemindaian binary `agy` untuk token baru yang hanya memiliki `id_token_email`; client secret tetap dibaca dari binary saat runtime.
 - Semua request memakai User-Agent `antigravity` dan timeout 20 detik.
 
 ### TUI
