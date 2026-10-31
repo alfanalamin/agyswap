@@ -718,7 +718,9 @@ def _valid_entry(acc: object) -> bool:
         return False
     try:
         tok = json.loads(acc["token"])
-        shape = isinstance(tok["token"]["refresh_token"], str) and isinstance(tok["id_token"], str)
+        shape = isinstance(tok["token"]["refresh_token"], str) and (
+            isinstance(tok.get("id_token"), str) or isinstance(tok.get("id_token_email"), str)
+        )
     except (KeyError, TypeError, ValueError):
         return False
     reason = acc.get("disabled_reason", "")
