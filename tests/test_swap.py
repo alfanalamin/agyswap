@@ -7,7 +7,7 @@ from agyswap import cli
 
 
 def make_token(email, refresh):
-    claims = base64.urlsafe_b64encode(json.dumps({"email": email}).encode()).decode().rstrip("=")
+    claims = base64.urlsafe_b64encode(json.dumps({"email": email, "azp": "client-id"}).encode()).decode().rstrip("=")
     return json.dumps({"token": {"refresh_token": refresh}, "id_token": f"h.{claims}.s"})
 
 
@@ -75,6 +75,11 @@ def test_switch_refuses_while_running(tmp_path, monkeypatch):
 def test_email_of_garbage():
     assert cli.email_of(None) is None
     assert cli.email_of("not json") is None
+
+
+def test_email_of_current_agy_token_shape():
+    token = json.dumps({"token": {"refresh_token": "r-a"}, "id_token_email": "a@x.com"})
+    assert cli.email_of(token) == "a@x.com"
 
 
 def test_fetch_pools_reads_5h_and_weekly_windows(monkeypatch):
@@ -1490,6 +1495,30 @@ def test_fresh_token_refreshes_and_skips_rejected_client(monkeypatch):
     fresh = _expiring(make_token("a@x.com", "r-a"), "2999-01-01T00:00:00Z")
     sent.clear()
     assert usage.fresh_token(fresh) == fresh and sent == []  # still valid: no request
+
+
+def test_fresh_token_scans_client_id_for_current_agy_shape(monkeypatch):
+    from agyswap import usage
+
+    monkeypatch.setattr(usage, "_agy_client_ids", lambda: ("client-id-from-agy",))
+    monkeypatch.setattr(usage, "_agy_client_secrets", lambda: ("S1",))
+    sent = []
+
+    def fake_post(url, data, headers=None):
+        sent.append(dict(__import__("urllib.parse").parse.parse_qsl(data.decode())))
+        return {"access_token": "new-access", "expires_in": 3600}
+
+    monkeypatch.setattr(usage, "_post", fake_post)
+    token = json.dumps(
+        {
+            "token": {"refresh_token": "r-a", "expiry": "2000-01-01T00:00:00Z"},
+            "id_token_email": "a@x.com",
+        }
+    )
+
+    refreshed = json.loads(usage.fresh_token(token))
+    assert sent[0]["client_id"] == "client-id-from-agy"
+    assert refreshed["token"]["access_token"] == "new-access"
 
 
 def test_fresh_token_fails_when_no_client_is_accepted(monkeypatch):
