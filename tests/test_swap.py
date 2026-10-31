@@ -496,6 +496,8 @@ def test_secret_tool_timeout_is_a_swap_error(monkeypatch):
 
     import pytest
 
+    monkeypatch.setattr(cli.sys, "platform", "linux")
+
     def slow(*a, **k):
         raise subprocess.TimeoutExpired("secret-tool", 30)
 
@@ -580,6 +582,8 @@ def test_keyring_read_failure_is_not_signed_out(monkeypatch):
 
     import pytest
 
+    monkeypatch.setattr(cli.sys, "platform", "linux")
+
     monkeypatch.setattr(
         cli.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, "", "Cannot autolaunch D-Bus")
     )
@@ -587,6 +591,57 @@ def test_keyring_read_failure_is_not_signed_out(monkeypatch):
         cli.read_token()
     monkeypatch.setattr(cli.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a, 1, "", ""))
     assert cli.read_token() is None  # missing item: exit 1, silent
+
+
+def test_macos_keychain_decodes_go_keyring_value(monkeypatch):
+    import subprocess
+
+    token = make_token("a@x.com", "r-a")
+    stored = cli._macos_token_value(token)
+    monkeypatch.setattr(cli.sys, "platform", "darwin")
+    monkeypatch.setattr(
+        cli.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args, 0, stored + "\n", ""),
+    )
+
+    assert cli.read_token() == token
+
+
+def test_macos_keychain_missing_item_is_signed_out(monkeypatch):
+    import subprocess
+
+    monkeypatch.setattr(cli.sys, "platform", "darwin")
+    monkeypatch.setattr(
+        cli.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args, 44, "", "security: The specified item could not be found in the keychain."
+        ),
+    )
+
+    assert cli.read_token() is None
+
+
+def test_macos_keychain_write_uses_stdin_and_go_keyring_encoding(monkeypatch):
+    import subprocess
+
+    token = make_token("a@x.com", "r-a")
+    calls = []
+    monkeypatch.setattr(cli.sys, "platform", "darwin")
+
+    def run(*args, **kwargs):
+        calls.append((args, kwargs))
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(cli.subprocess, "run", run)
+    cli.write_token(token)
+
+    args, kwargs = calls[0]
+    assert args[0] == [cli.MACOS_SECURITY, "-i"]
+    assert kwargs["input"].startswith("add-generic-password -U")
+    assert cli._macos_token_value(token) in kwargs["input"]
+    assert token not in kwargs["input"]
 
 
 def test_save_store_leaves_no_temp_file(tmp_path, monkeypatch):
@@ -834,10 +889,10 @@ def test_tui_alias_best_auto_export_import_reach_their_commands(monkeypatch):
         ("auto",),
         ("best",),
         ("auto",),
-        ("export", "/home/u/agyswap-export.agyswap"),
-        ("export", "/home/u/x.json"),
+        ("export", tui._abspath("~/agyswap-export.agyswap")),
+        ("export", tui._abspath("~/x.json")),
         ("import", str(Path("y.json").resolve())),
-        ("import", "/home/u/z.json"),
+        ("import", tui._abspath("~/z.json")),
     ]
 
 
