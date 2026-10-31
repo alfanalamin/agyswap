@@ -23,13 +23,13 @@ Inspired by [claude-swap](https://github.com/realiti4/claude-swap).
 
 ## Status
 
-**Usable on Linux.** Adding accounts, switching between them (by hand, by quota, or with `auto` when the active account runs low), aliases, enable/disable, export/import, JSON output, the quota list, and the interactive dashboard all work. Switching between two real accounts without signing in again has been verified.
+**Usable on Linux and macOS.** Adding accounts, switching between them (by hand, by quota, or with `auto` when the active account runs low), aliases, enable/disable, export/import, JSON output, the quota list, and the interactive dashboard all work. Linux real-account switching has been verified; macOS Keychain support is covered by tests and still needs a real-account verification on each agy release.
 
-Not built yet: parallel sessions with different accounts, and macOS/Windows keyrings. [`TODO.md`](https://github.com/rasvanjaya21/agyswap/blob/master/TODO.md) lists every open item. Questions, ideas, and feedback are welcome in [Discussions](https://github.com/rasvanjaya21/agyswap/discussions).
+Not built yet: parallel sessions with different accounts and Windows support. [`TODO.md`](https://github.com/rasvanjaya21/agyswap/blob/master/TODO.md) lists every open item. Questions, ideas, and feedback are welcome in [Discussions](https://github.com/rasvanjaya21/agyswap/discussions).
 
 ## Techstacks
 
-Python 3.12+ managed with uv. The dashboard uses Textual and Rich; everything else is the standard library, plus `secret-tool` (libsecret) for the keyring.
+Python 3.12+ managed with uv. The dashboard uses Textual and Rich; everything else is the standard library, plus `secret-tool` (libsecret) on Linux or the built-in `/usr/bin/security` Keychain tool on macOS.
 
 ## Installation
 
@@ -38,7 +38,7 @@ $ uv tool install agyswap-cli    # or: pipx install agyswap-cli / pip install ag
 $ agyswap --help                 # the command is still agyswap
 ```
 
-agyswap needs Linux with a Secret Service keyring (GNOME Keyring or KWallet) and `secret-tool` (`dnf install libsecret` or `apt install libsecret-tools`).
+On Linux, agyswap needs a Secret Service keyring (GNOME Keyring or KWallet) and `secret-tool` (`dnf install libsecret` or `apt install libsecret-tools`). On macOS, agyswap uses the built-in Keychain command at `/usr/bin/security`.
 
 ## Configuration
 

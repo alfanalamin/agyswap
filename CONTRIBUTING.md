@@ -9,7 +9,7 @@ uv run pytest -q
 uv run agyswap          # TUI
 ```
 
-Requirements: Linux, Python 3.12+, [uv](https://docs.astral.sh/uv/), and `secret-tool` (libsecret).
+Requirements: Linux or macOS, Python 3.12+, [uv](https://docs.astral.sh/uv/), and `secret-tool` (libsecret) on Linux. macOS uses the built-in `/usr/bin/security` Keychain command.
 
 Tests never touch the real keyring, the network, or `~/.agyswap/`. For a manual run against your real agy login, use a throwaway store and shred it afterwards:
 
