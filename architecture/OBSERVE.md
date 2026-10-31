@@ -4,6 +4,15 @@
 - Lingkungan: Fedora 43, `gnome-keyring-48.0-3.fc43` (Secret Service)
 - Disusun dari sesi pembuatan agyswap dan tiga putaran `/agyswap-observe` (kuota per window, isolasi sesi, agy 1.3.1 dan kuota habis). Observasi ulang setiap kali `agy --version` berubah.
 
+## macOS (agy 1.4.12, analisis statis lokal)
+
+Pada macOS arm64, `agy --version` menghasilkan `1.4.12`. String binary menunjukkan vendored `github.com/zalando/go-keyring` Darwin backend (`third_party/golang/github_com/zalando/go_keyring/v/v0/keyring_darwin.go`) dan prefix `go-keyring-base64:`. Implikasinya:
+
+- Item tetap memakai service `gemini` dan username `antigravity`, tetapi nilai yang dibaca dari Keychain perlu di-decode dari `go-keyring-base64:<base64>` sebelum dipakai sebagai token JSON.
+- Saat menulis, nilai perlu di-encode dengan prefix yang sama. Agyswap mengirim perintah `add-generic-password` melalui `/usr/bin/security -i` supaya token tidak diletakkan di argv proses.
+- Nilai legacy `go-keyring-encoded:<hex>` juga dibaca agar akun yang dibuat oleh backend Darwin versi lama tetap dapat dipakai.
+- `fcntl.flock`, `pgrep`, `os.getuid`, dan mode POSIX tetap tersedia di macOS, jadi perubahan platform hanya diperlukan pada backend keyring.
+
 ## Windows (agy 1.3.3, analisis statis)
 
 Laporan user: `uv tool install agyswap-cli` 0.3.1 di Windows langsung gagal saat import: `ModuleNotFoundError: No module named 'fcntl'` (`cli.py` baris 11). Peta di bawah dari binary Windows resmi dan `install.ps1`, tanpa menjalankan agy di Windows.

@@ -21,7 +21,7 @@ User story yang sudah terpenuhi:
 
 - Python 3.12+ (diuji 3.12, 3.13, 3.14), dikelola dengan uv.
 - Runtime: `textual>=8.2.8,<9` (TUI) dan `rich>=15` (render bar). Sisanya stdlib: `urllib`, `fcntl`, `concurrent.futures`, `argparse`, `json`.
-- Keyring: `secret-tool` (libsecret, Secret Service). Hanya Linux.
+- Keyring: `secret-tool` (libsecret, Secret Service) on Linux; `/usr/bin/security` and macOS Keychain on macOS. The macOS backend preserves the `go-keyring-base64:` encoding used by agy.
 - Dev: `pytest`, `ruff`. Build: hatchling.
 
 ## Commands
