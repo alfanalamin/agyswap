@@ -8,9 +8,11 @@ a stored copy of that blob; switching writes another copy back.
 from __future__ import annotations
 
 import argparse
+import base64
 import fcntl
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -27,6 +29,9 @@ from agyswap.usage import Pool, RateLimited, TokenRevoked, UsageError, account_u
 
 SERVICE = "gemini"
 USERNAME = "antigravity"
+MACOS_SECURITY = "/usr/bin/security"
+GO_KEYRING_BASE64 = "go-keyring-base64:"
+GO_KEYRING_HEX = "go-keyring-encoded:"
 
 
 class SwapError(Exception):
@@ -115,7 +120,6 @@ def _write_private(p: Path, data: dict) -> None:
 
 
 def _secret_tool(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
-    # ponytail: Linux Secret Service only; macOS Keychain / Windows Credential Manager when needed.
     try:
         return subprocess.run(["secret-tool", *args], input=stdin, capture_output=True, text=True, timeout=30)
     except FileNotFoundError:
@@ -124,7 +128,63 @@ def _secret_tool(*args: str, stdin: str | None = None) -> subprocess.CompletedPr
         raise SwapError("keyring did not answer within 30s (locked?). Unlock it and try again.") from None
 
 
+def _security(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(
+            [MACOS_SECURITY, *args],
+            input=stdin,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except FileNotFoundError:
+        raise SwapError("macOS Keychain tool not found at /usr/bin/security.") from None
+    except subprocess.TimeoutExpired:
+        raise SwapError("macOS Keychain did not answer within 30s (locked?). Unlock it and try again.") from None
+
+
+def _macos_token_value(token: str) -> str:
+    encoded = base64.b64encode(token.encode()).decode()
+    return f"{GO_KEYRING_BASE64}{encoded}"
+
+
+def _decode_macos_token(value: str) -> str:
+    if value.startswith(GO_KEYRING_BASE64):
+        try:
+            return base64.b64decode(value.removeprefix(GO_KEYRING_BASE64), validate=True).decode()
+        except (ValueError, UnicodeDecodeError):
+            raise SwapError("The macOS Keychain token is not valid go-keyring data.") from None
+    if value.startswith(GO_KEYRING_HEX):
+        try:
+            return bytes.fromhex(value.removeprefix(GO_KEYRING_HEX)).decode()
+        except (ValueError, UnicodeDecodeError):
+            raise SwapError("The macOS Keychain token is not valid go-keyring data.") from None
+    return value
+
+
+def _read_macos_token() -> str | None:
+    r = _security("find-generic-password", "-s", SERVICE, "-wa", USERNAME)
+    output = (r.stdout + r.stderr).lower()
+    if r.returncode != 0:
+        if "could not be found" in output:
+            return None
+        raise SwapError(f"Failed to read macOS Keychain: {(r.stderr or r.stdout).strip()}")
+    return _decode_macos_token(r.stdout.removesuffix("\n")) if r.stdout else None
+
+
+def _write_macos_token(token: str) -> None:
+    value = _macos_token_value(token)
+    command = f"add-generic-password -U -s {shlex.quote(SERVICE)} -a {shlex.quote(USERNAME)} -w {shlex.quote(value)}\n"
+    if len(command.encode()) > 4096:
+        raise SwapError("The token is too large for the macOS Keychain command interface.")
+    r = _security("-i", stdin=command)
+    if r.returncode != 0:
+        raise SwapError(f"Failed to write macOS Keychain: {r.stderr.strip()}")
+
+
 def read_token() -> str | None:
+    if sys.platform == "darwin":
+        return _read_macos_token()
     r = _secret_tool("lookup", "service", SERVICE, "username", USERNAME)
     if r.returncode != 0 and r.stderr.strip():
         # A missing item exits 1 silently; anything on stderr is a keyring failure, not "signed out".
@@ -133,6 +193,9 @@ def read_token() -> str | None:
 
 
 def write_token(token: str) -> None:
+    if sys.platform == "darwin":
+        _write_macos_token(token)
+        return
     r = _secret_tool(
         "store",
         f"--label=Password for '{USERNAME}' on '{SERVICE}'",
